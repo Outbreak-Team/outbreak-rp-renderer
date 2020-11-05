@@ -1,0 +1,2 @@
+include orp/reg/context.reg
+include orp/blender_template/*/*
