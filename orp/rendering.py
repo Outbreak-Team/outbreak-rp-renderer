@@ -19,19 +19,18 @@ def render_heightmap(img_resolution: int, out_path: str) -> str:
     # Объекты, объём которых запекаем
     objs_collection = bpy.data.collections["objects_for_baking"].all_objects
 
-    # Материал, содержащий ноды Material Output с именами
-    # heightmap_out и normalmap_out
-    out_mat = bpy.data.materials["Heightmap_and_Normalmap"]
-
-    # Активируем Material Output для карты нормалей
-    out_mat.node_tree.nodes.active = out_mat.node_tree.nodes["heightmap_out"]
+    # Активируем во всех объектах нужный нод Material Output
+    for obj in objs_collection:
+        for mat_slot in obj.material_slots:
+            mat = mat_slot.material
+            # Активируем Material Output для карты нормалей
+            mat.node_tree.nodes.active = mat.node_tree.nodes["heightmap_out"]
 
     bpy.context.scene.render.filepath = out_path
 
     bpy.context.scene.render.engine = 'BLENDER_EEVEE'
     bpy.context.scene.view_settings.view_transform = 'Standard'
     bpy.context.scene.render.image_settings.color_mode = 'BW'
-
     bpy.context.scene.render.resolution_y = img_resolution
     bpy.context.scene.render.resolution_x = img_resolution
 
@@ -55,37 +54,29 @@ def bake_normalmap(img_resolution: int, out_path: str) -> str:
 
     # Объекты, объём которых запекаем
     objs_collection = bpy.data.collections["objects_for_baking"].all_objects
-
-    # Материал, содержащий ноды Material Output с именами
-    # heightmap_out и normalmap_out
-    out_mat = bpy.data.materials["Heightmap_and_Normalmap"]
-
-    # Активируем Material Output для карты нормалей
-    out_mat.node_tree.nodes.active = out_mat.node_tree.nodes["normalmap_out"]
-
-    # Выделяем все объекты, а bakescreen делаем активным
+    
+    # Выделяем объекты и делаем активными Material Output'ы
     for obj in objs_collection:
         obj.select_set(True)
+        for mat_slot in obj.material_slots:
+            mat = mat_slot.material
+            # Активируем Material Output для карты нормалей
+            mat.node_tree.nodes.active = mat.node_tree.nodes["normalmap_out"]
 
+    # Объекты выделены (выше), а bakescreen делаем активным
     bakescreen_obj.select_set(True)
     bpy.context.view_layer.objects.active = bakescreen_obj
 
     # Создаём картинку для запекания
     bake_img = bpy.data.images.new('bake', img_resolution, img_resolution)
-
-    mat = bakescreen_obj.material_slots[0].material
-
-    # Создаём нод с картинкой
-    nodes = mat.node_tree.nodes
+    # Создаём нод с картинкой, активируем
+    nodes = bakescreen_obj.material_slots[0].material.node_tree.nodes
     texture_node = nodes.new('ShaderNodeTexImage')
-    # texture_node.name = 'normalmap_bake_node'
     texture_node.select = True
     nodes.active = texture_node
     texture_node.image = bake_img
 
     bpy.context.scene.render.image_settings.color_mode = 'RGB'
-
-    # Selected to active
     bpy.context.scene.render.bake.use_selected_to_active = True
 
     bpy.ops.object.bake(type='NORMAL', save_mode='EXTERNAL')

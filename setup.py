@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='outbreakrprenderer',
-      version='0.1.0',
+      version='0.1.1',
       description='Minecraft resourcepack normalmaps & heightmaps renderer',
       url='https://github.com/Outbreak-Team/outbreak-rp-renderer',
       author='FeelinVoids_',

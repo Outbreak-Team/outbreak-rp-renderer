@@ -17,8 +17,8 @@ APP_NAME = "orp"
 CONTEXT_MENU_TEXT = "Render normalmap and heightmap ({res})"
 
 
-def _get_blender_templates_path() -> Optional[str]:
-    """ Возвращает путь к папке
+def _get_blender_templates_paths() -> List[str]:
+    """ Возвращает пути к папкам
         `Blender/<version>/scripts/startup/bl_app_templates_system`. """
     paths = os.getenv("path").split(";")
     blender_path = None
@@ -28,51 +28,54 @@ def _get_blender_templates_path() -> Optional[str]:
             break
 
     if blender_path is None:
-        return None
+        print("Blender is not added to PATH")
+        return []
 
+    result = []
     dirs = os.listdir(blender_path)
     version = None
     for dirname in dirs:
         found = re.findall("\\d+\\.\\d+", dirname)
         if len(found) == 1:
-            version = found[0]
-            break
+            result.append(
+                os.path.join(blender_path, found[0], "scripts", "startup",
+                             "bl_app_templates_system")
+            )
 
-    return os.path.join(blender_path, version, "scripts", "startup",
-                        "bl_app_templates_system")
+    return result
 
 
 def install_blender_template():
     """ Добавляет шаблон нового файла Blender,
         настроенный для рендеринга карт нормалей и высот. """
-    blender_path = _get_blender_templates_path()
-    if blender_path is None:
-        print("Add Blender to PATH first!")
-        return
+    for blender_path in _get_blender_templates_paths():
+        try:
+            src = os.path.join(DIRPATH, "blender_template")
+            dst = os.path.join(blender_path)
 
-    src = os.path.join(DIRPATH, "blender_template")
-    dst = os.path.join(blender_path)
-
-    for item in os.listdir(src):
-        s = os.path.join(src, item)
-        d = os.path.join(dst, item)
-        if os.path.isdir(s):
-            shutil.copytree(s, d)
-        else:
-            shutil.copy2(s, d)
+            for item in os.listdir(src):
+                s = os.path.join(src, item)
+                d = os.path.join(dst, item)
+                if os.path.isdir(s):
+                    shutil.copytree(s, d)
+                else:
+                    shutil.copy2(s, d)
+                print("Installed template in", blender_path)
+        except FileExistsError:
+            pass
     print("OK")
 
 
 def remove_blender_template():
     """ Удаляет шаблон нового файла Blender """
-    blender_path = _get_blender_templates_path()
-    if blender_path is None:
-        print("Add Blender to PATH first!")
-        return
-
-    shutil.rmtree(
-        os.path.join(blender_path, "Minecraft resourcepack normal mapping")
-    )
+    for blender_path in _get_blender_templates_paths():
+        try:
+            p = os.path.join(blender_path,
+                             "Minecraft resourcepack normal mapping")
+            shutil.rmtree(p)
+            print("Removed", p)
+        except FileNotFoundError:
+            pass
     print("OK")
 
 
